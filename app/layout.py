@@ -48,7 +48,9 @@ def header():
     return html.Div(style=HEADER_STYLE, children=[
         html.Div(html.H1("Occurrence & Investigation Dashboard",
                          style={'fontSize': '18px', 'margin': 0})),
+        
         html.Div([
+            
             html.Button("Export Storyboard as PDF", id="btn-print",
                         style={
                             'background': '#2dd4bf',
@@ -57,6 +59,8 @@ def header():
                             'padding': '8px 12px',
                             'borderRadius': '8px'
                         }),
+                        
+        
             html.Div(
                 f"Last refresh: {datetime.today().strftime('%d-%m-%Y')}",
                      style={'fontSize': '12px', 'color': '#94a3b8',

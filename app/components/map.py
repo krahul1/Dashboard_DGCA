@@ -142,11 +142,11 @@ def build_map_component(df: Optional[pd.DataFrame] = None):
     if df is None:
         # read incidents
         if not os.path.exists(DATA_CSV):
-            return html.Div(f"Incidents file not found: {DATA_CSV}", style={'color':'#ff6b6b','paddingTop':'120px','textAlign':'center','height':'360px'})
+            return html.Div(f"Incidents file not found: {DATA_CSV}", style={'color':'#ff6b6b','paddingTop':'120px','textAlign':'center','height':'880px'})
         df = _safe_read_csv(DATA_CSV, parse_dates=['Date'], low_memory=False)
 
     if df is None or df.empty:
-        return html.Div("No incident data available.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'360px'})
+        return html.Div("No incident data available.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'880px'})
 
     # If Latitude/Longitude already present, use them directly
     if 'Latitude' in df.columns and 'Longitude' in df.columns:
@@ -156,15 +156,15 @@ def build_map_component(df: Optional[pd.DataFrame] = None):
         coords['Longitude'] = pd.to_numeric(coords['Longitude'], errors='coerce')
         coords = coords.dropna(subset=['Latitude','Longitude'])
         if coords.empty:
-            return html.Div("Coordinates present but invalid format in provided data.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'360px'})
+            return html.Div("Coordinates present but invalid format in provided data.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'880px'})
     else:
         # Need to merge airport master here
         if not os.path.exists(AIRPORT_MASTER_CSV):
-            return html.Div(f"Airport master file not found: {AIRPORT_MASTER_CSV}", style={'color':'#ff6b6b','paddingTop':'120px','textAlign':'center','height':'360px'})
+            return html.Div(f"Airport master file not found: {AIRPORT_MASTER_CSV}", style={'color':'#ff6b6b','paddingTop':'120px','textAlign':'center','height':'880px'})
 
         master = _safe_read_csv(AIRPORT_MASTER_CSV)
         if master is None or master.empty:
-            return html.Div("Airport master is empty or couldn't be read.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'360px'})
+            return html.Div("Airport master is empty or couldn't be read.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'880px'})
 
         # Normalize names to avoid whitespace issues
         df = _normalize_column_names(df)
@@ -212,7 +212,7 @@ def build_map_component(df: Optional[pd.DataFrame] = None):
 
     # If, after all attempts, no coords, return message
     if coords is None or coords.empty:
-        return html.Div("No incidents with valid coordinates after joining/mapping.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'360px'})
+        return html.Div("No incidents with valid coordinates after joining/mapping.", style={'color':'#94a3b8','paddingTop':'120px','textAlign':'center','height':'880px'})
 
     # Build hover text for each point
     def hover_text(row):
@@ -230,7 +230,7 @@ def build_map_component(df: Optional[pd.DataFrame] = None):
     # center map
     center_lat = coords['Latitude'].mean()
     center_lon = coords['Longitude'].mean()
-
+    '''
     fig = px.scatter_mapbox(
         coords,
         lat='Latitude',
@@ -240,6 +240,18 @@ def build_map_component(df: Optional[pd.DataFrame] = None):
         zoom=4,
         height=360
     )
+    '''
+
+    fig = px.scatter_mapbox(
+    coords,
+    lat='Latitude',
+    lon='Longitude',
+    hover_name='hover',
+    hover_data={c: True for c in ['S/N', 'Date'] if c in coords.columns},
+    zoom=4
+    )
+
+
     fig.update_layout(mapbox_style='open-street-map', margin={'l':0,'r':0,'t':0,'b':0}, mapbox_center={'lat': center_lat, 'lon': center_lon})
 
-    return dcc.Graph(figure=fig, config={'displayModeBar': False}, style={'height':'360px'})
+    return dcc.Graph(figure=fig, config={'displayModeBar': False}, style={'height':'880px'})

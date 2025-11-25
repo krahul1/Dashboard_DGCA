@@ -18,13 +18,13 @@ def render_dashboard(df: Optional[pd.DataFrame]):
     open_count = df[df['Status'].str.lower() == 'open'].shape[0] if 'Status' in df.columns else 0
     recs_outstanding = df[df['ATR of Recommendations'].str.lower().isin(['pending'])].shape[0] if 'ATR of Recommendations' in df.columns else 0
     avg_close = '42 days'
-    '''
+    
     if not df.empty and 'Date' in df.columns:
         df_monthly = df.groupby(pd.Grouper(key='Date', freq='ME')).size().reset_index(name='count')
         fig_trend = px.line(df_monthly, x='Date', y='count', title='Open investigations trend')
     else:
         fig_trend = {}
-    '''    
+        
     # ----- Occurrences by Month -----
     if 'Date' in df.columns:
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
@@ -58,7 +58,7 @@ def render_dashboard(df: Optional[pd.DataFrame]):
         y='count',
         title=f"Occurrences {start.strftime('%b %Y')} to {end.strftime('%b %Y')}",
         labels={'count': 'Occurrences', 'Date': 'Month'},
-        height=360  # increase height (px) — change this value to taste
+        height=440  # increase height (px) — change this value to taste
     )
 
 # tidy x-axis formatting: show month and year, rotate ticks if crowded
@@ -77,7 +77,6 @@ def render_dashboard(df: Optional[pd.DataFrame]):
 
     map_component = build_map_component(df)
 
-    card_height = "360px"
 
     return html.Div(children=[
         html.Div(style={'display':'flex','gap':'12px','marginTop':'6px','marginBottom':'12px'}, children=[
@@ -86,14 +85,80 @@ def render_dashboard(df: Optional[pd.DataFrame]):
             html.Div(style={'flex':'1','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.Div('Recommendations outstanding', style={'fontSize':'14px'}), html.Div(recs_outstanding, style={'fontSize':'22px','fontWeight':'600'})]),
             html.Div(style={'flex':'1','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.Div('Avg days to close', style={'fontSize':'14px'}), html.Div(avg_close, style={'fontSize':'22px','fontWeight':'600'})]),
         ]),
+        
+        # ----- MAP + RIGHT PANE (replace your existing block) -----
+        html.Div(
+            style={
+                'display': 'flex',
+                'gap': '12px',
+                'alignItems': 'stretch',
+                # give a top-level minHeight so child columns can use 100% height reliably
+                'Height': '880px'      # <-- increase if you want larger map by default
+            },
+            children=[
+                # MAP COLUMN
+                html.Div(
+                    style={
+                        # grow more than right column, allow shrinking, but basis 0 so it shares space
+                        'flex': '2 1 0%',
+                        'minWidth': '0',            # lets the column shrink correctly without overflow
+                        'display': 'flex',
+                        'flexDirection': 'column',
+                        # the column will stretch to parent's minHeight
+                        'height': '100%'  # <-- increase if you want larger map by default,
+                    },
+                    children=[
+                        # map wrapper that fills the column. minHeight keeps it visible.
+                        html.Div(
+                            map_component,
+                            style={
+                                'flex': '2 1 auto',
+                                'height': '100%',
+                                'Height': '880px',   # safeguard so map won't shrink smaller than this
+                                'width': '100%',
+                                'boxSizing': 'border-box',
+                            }
+                        )
+                    ]
+                ),
 
-        html.Div(style={'display':'flex','gap':'12px'}, children=[
-            html.Div(style={'flex':'2','padding':'0'}, children=[map_component]),
-            html.Div(style={'flex':'1','display':'flex','flexDirection':'column'}, children=[
-                html.Div(style={'padding':'0','background':'rgba(255,255,255,0.02)'}, children=[dcc.Graph(figure=fig_month, style={'height':card_height})]),
-                #html.Div(style={'padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[dcc.Graph(figure=fig_trend, style={'height':'160px'})])
-            ])
-        ]),
+                # RIGHT COLUMN (graphs)
+                html.Div(
+                    style={
+                        'flex': '1 1 440px',  # basis 360px but can shrink/grow
+                        'display': 'flex',
+                        'flexDirection': 'column',
+                        'gap': '12px',
+                        'minWidth': '0',
+                        'height': '880px',
+                    },
+                    children=[
+                        html.Div(
+                            dcc.Graph(figure=fig_month, style={'height': '100%'}),
+                            style={
+                                'padding': '2px',
+                                'background': 'rgba(255,255,255,0.02)',
+                                'borderRadius': '0px',
+                                
+                                'flex': '1 1 440px',
+                                'minWidth': '0',
+                            }
+                        ),
+                        html.Div(
+                            dcc.Graph(figure=fig_trend, style={'height': '100%'}),
+                            style={
+                                'padding': '2px',
+                                'background': 'rgba(255,255,255,0.02)',
+                                'borderRadius': '0px',
+                                'flex': '1 1 440%',
+                                'minWidth': '0',
+                            }
+                        )
+                    ]
+                )
+            ]
+        ),
+
 
         html.Div(style={'marginTop':'12px','display':'flex','gap':'12px'}, children=[
             html.Div(style={'flex':'1','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.H4('Top Operators'), html.Ul([html.Li(f"{op} — {cnt}") for op,cnt in (df['Operator'].value_counts().head(6).items() if 'Operator' in df.columns else [])])]),
@@ -101,7 +166,7 @@ def render_dashboard(df: Optional[pd.DataFrame]):
             html.Div(style={'flex':'1','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.H4('Recommendations Board'), html.Div('ATR pending: {}'.format(recs_outstanding)), html.Button('View Recommendations', id='btn-view-recs')])
         ]),
 
-        #html.Div(style={'marginTop':'12px','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.H4('Investigations table'), table])
+        html.Div(style={'marginTop':'12px','padding':'12px','background':'rgba(255,255,255,0.02)','borderRadius':'8px'}, children=[html.H4('Investigations table'), table])
     ])
 
 # re-export convenience names for callbacks
