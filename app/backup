@@ -1,0 +1,165 @@
+# app/callbacks.py
+from dash.dependencies import Input, Output, State
+from dash import callback_context
+from .utils import load_data
+from .pages.home import render_dashboard, render_detail, render_recommendations, render_storyboard
+
+# -----------------------------------------
+# Helper: build dropdown options from values
+# -----------------------------------------
+def make_options_from_series(ser):
+    """Return [{'label': v, 'value': v}, ...] with 'All' first. ser may be Series or list."""
+    if ser is None:
+        return [{'label': 'All', 'value': 'All'}]
+    try:
+        vals = sorted([str(x) for x in pd.Series(ser).dropna().unique()])
+        return [{'label': 'All', 'value': 'All'}] + [{'label': v, 'value': v} for v in vals]
+    except Exception:
+        # fallback simple mapping
+        vals = sorted(list(set([str(x) for x in (ser or []) if x is not None])))
+        return [{'label': 'All', 'value': 'All'}] + [{'label': v, 'value': v} for v in vals]
+
+# Note: we import pandas here only for helper; app/utils already uses pandas in load_data
+import pandas as pd
+
+# -----------------------------------------
+# Filtering function (same as we discussed)
+# -----------------------------------------
+def apply_filters(df, store):
+    if df is None or df.empty:
+        return df
+    s = store or {}
+    # exact-match filters
+    if s.get('airport') and s.get('airport') != 'All' and 'Airport / Place of occurrence' in df.columns:
+        df = df[df['Airport / Place of occurrence'] == s['airport']]
+    if s.get('operator') and s.get('operator') != 'All' and 'Operator' in df.columns:
+        df = df[df['Operator'] == s['operator']]
+    if s.get('aircraft') and s.get('aircraft') != 'All' and 'Aircraft Type' in df.columns:
+        df = df[df['Aircraft Type'] == s['aircraft']]
+    if s.get('phase') and s.get('phase') != 'All' and 'Phase of flight' in df.columns:
+        df = df[df['Phase of flight'] == s['phase']]
+    if s.get('status') and s.get('status') != 'All' and 'Status' in df.columns:
+        df = df[df['Status'].str.lower() == s['status'].lower()]
+    # substring search
+
+
+    q = (s.get('search') or '').strip().lower()
+    if q:
+        def row_matches(row):
+            for col in ['S/N', 'Flight No', 'Brief Description', 'Operator', 'Airport']:
+                if col in row and pd.notna(row[col]):
+                    if q in str(row[col]).lower():
+                        return True
+            return False
+        try:
+            mask = df.apply(lambda r: row_matches(r), axis=1)
+            df = df[mask]
+        except Exception:
+            pass
+    return df
+
+# -----------------------------------------
+# Main registration function
+# -----------------------------------------
+def register_callbacks(app):
+
+
+    
+
+    # Populate dynamic dropdown options from dataset (fires on app load)
+    @app.callback(
+        [
+            Output('airport-filter', 'options'),
+            Output('operator-filter', 'options'),
+            Output('aircraft-filter', 'options'),
+            Output('phase-filter', 'options'),
+            Output('status-filter', 'options'),
+            #Output('month-picker', 'date'),  # reset month picker on load New1
+        ],
+        [Input('page-content', 'children')],
+        prevent_initial_call=False
+    )
+    def populate_filter_options(_page_children):
+        # Read dataset
+        df = load_data()
+        print("[populate_filter_options] df loaded:", None if df is None else df.shape)
+        # If df empty, return default All for each
+        if df is None or df.empty:
+            return [{'label':'All','value':'All'}]*5
+
+        # Adjust these column names if your CSV has different headers
+        airport_opts = make_options_from_series(
+            df['Airport / Place of occurrence']) if 'Airport / Place of occurrence' in df.columns else [{'label':'All','value':'All'}]
+        operator_opts = make_options_from_series(df['Operator']) if 'Operator' in df.columns else [{'label':'All','value':'All'}]
+        aircraft_opts = make_options_from_series(df['Aircraft Type']) if 'Aircraft Type' in df.columns else [{'label':'All','value':'All'}]
+        phase_opts = make_options_from_series(df['Phase of flight']) if 'Phase of flight' in df.columns else [{'label':'All','value':'All'}]
+        status_opts = make_options_from_series(df['Status']) if 'Status' in df.columns else [{'label':'All','value':'All'}]
+
+        print("[populate_filter_options] airport count:", len(airport_opts)-1, "operator count:", len(operator_opts)-1)
+        return airport_opts, operator_opts, aircraft_opts, phase_opts, status_opts
+
+    # Update store-filter whenever controls change
+    @app.callback(
+        Output('store-filter', 'data'),
+        [
+            Input('search-input', 'value'),
+            Input('airport-filter', 'value'),
+            Input('operator-filter', 'value'),
+            Input('aircraft-filter', 'value'),
+            Input('phase-filter', 'value'),
+            Input('status-filter', 'value'),
+            #Input('month-picker', 'date'),  # New1
+        ],
+        prevent_initial_call=False
+    )
+    def update_store(search, airport, operator, aircraft, phase, status):
+        data = {
+            'search': search or '',
+            'airport': airport or 'All',
+            'operator': operator or 'All',
+            'aircraft': aircraft or 'All',
+            'phase': phase or 'All',
+            'status': status or 'All'
+            # Note: month-picker value not stored here; can be used directly if needed
+        }
+        print("[update_store] store:", data)
+        return data
+
+    # Combined router + reactive dashboard: reacts to nav buttons AND store-filter
+    @app.callback(
+        Output('page-content', 'children'),
+        [
+            Input('nav-dashboard', 'n_clicks'),
+            Input('nav-detail', 'n_clicks'),
+            Input('nav-recs', 'n_clicks'),
+            Input('nav-story', 'n_clicks'),
+            Input('store-filter', 'data'),  # when filters change, re-render dashboard
+            #Input('month-picker', 'date')  # New1
+        ],
+        prevent_initial_call=False
+    )
+    def display_page(n1, n2, n3, n4, store_data):
+        ctx = callback_context
+        df = load_data()
+        print("[display_page] loaded df:", None if df is None else df.shape, "store:", store_data)
+        filtered_df = apply_filters(df.copy() if df is not None else df, store_data)
+
+        # no trigger => page load
+        if not ctx.triggered:
+            return render_dashboard(filtered_df)
+
+        trig = ctx.triggered[0]['prop_id'].split('.')[0]
+        # if filter changed -> update dashboard
+        if trig == 'store-filter':
+            return render_dashboard(filtered_df)
+        # nav buttons (apply filters for pages too)
+        if trig == 'nav-detail':
+            return render_detail(filtered_df)
+        elif trig == 'nav-recs':
+            return render_recommendations(filtered_df)
+        elif trig == 'nav-story':
+            return render_storyboard(filtered_df)
+        else:
+            return render_dashboard(filtered_df)
+
+            

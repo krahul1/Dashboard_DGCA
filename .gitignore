@@ -1,0 +1,37 @@
+# create .gitignore
+cat > .gitignore <<'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.sqlite3
+
+# virtualenvs
+.venv/
+venv/
+env/
+ENV/
+pyvenv.cfg
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+
+# env files / secrets
+.env
+.env.* 
+
+# data
+*.csv
+*.sqlite
+*.db
+
+# build / distribution
+dist/
+build/
+EOF
