@@ -40,3 +40,7 @@ Compare operators and aircraft types
 Identify state-level safety risks
 
 Support evidence-based aviation safety decisions
+
+
+
+<img width="1450" height="780" alt="image" src="https://github.com/user-attachments/assets/3b0d240c-837e-4119-82b9-52544107eac9" />
