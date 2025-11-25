@@ -1,5 +1,7 @@
 # app/layout.py
 from dash import html, dcc
+import datetime
+from datetime import datetime
 
 APP_STYLE = {
     'fontFamily': 'Inter, Arial, sans-serif',
@@ -55,7 +57,8 @@ def header():
                             'padding': '8px 12px',
                             'borderRadius': '8px'
                         }),
-            html.Div('Last refresh: 2025-11-24',
+            html.Div(
+                f"Last refresh: {datetime.today().strftime('%d-%m-%Y')}",
                      style={'fontSize': '12px', 'color': '#94a3b8',
                             'display': 'inline-block', 'marginLeft': '12px'})
         ])
