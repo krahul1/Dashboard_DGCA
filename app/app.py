@@ -2,6 +2,9 @@
 from dash import Dash
 import flask
 
+app = Dash(__name__)
+server = app.server
+
 def create_dash_app(server=None, url_base_pathname='/'):
     """Create and return a Dash app instance.
     Keep suppress_callback_exceptions True to allow modular callbacks.

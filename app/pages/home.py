@@ -41,10 +41,10 @@ def render_dashboard(df: Optional[pd.DataFrame]):
     else:
         df_window = df.iloc[0:0].copy()
     
-    month_index = pd.date_range(start=start + MonthEnd(0), end=end, freq='M')  # month-end points
+    month_index = pd.date_range(start=start + MonthEnd(0), end=end, freq='ME')  # month-end points
     if not df_window.empty:
     # resample by month-end (so the x axis shows months)
-        monthly = df_window.set_index('Date').resample('M').size().reindex(month_index, fill_value=0)
+        monthly = df_window.set_index('Date').resample('ME').size().reindex(month_index, fill_value=0)
     else:
         monthly = pd.Series(0, index=month_index)
 

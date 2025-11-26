@@ -1,0 +1,15 @@
+[2025-11-26 15:33:26 +0530] [25917] [INFO] Starting gunicorn 23.0.0
+[2025-11-26 15:33:26 +0530] [25917] [INFO] Listening at: http://0.0.0.0:8050 (25917)
+[2025-11-26 15:33:26 +0530] [25917] [INFO] Using worker: gthread
+[2025-11-26 15:33:26 +0530] [25918] [INFO] Booting worker with pid: 25918
+[2025-11-26 15:42:08 +0530] [27234] [INFO] Starting gunicorn 23.0.0
+[2025-11-26 15:42:08 +0530] [27234] [INFO] Listening at: http://0.0.0.0:8050 (27234)
+[2025-11-26 15:42:08 +0530] [27234] [INFO] Using worker: gthread
+[2025-11-26 15:42:08 +0530] [27303] [INFO] Booting worker with pid: 27303
+[2025-11-26 15:42:55 +0530] [27234] [INFO] Handling signal: int
+[2025-11-26 15:42:55 +0530] [27303] [INFO] Worker exiting (pid: 27303)
+[2025-11-26 15:42:55 +0530] [27234] [INFO] Shutting down: Master
+[2025-11-26 15:46:09 +0530] [27765] [INFO] Starting gunicorn 23.0.0
+[2025-11-26 15:46:09 +0530] [27765] [INFO] Listening at: http://0.0.0.0:8050 (27765)
+[2025-11-26 15:46:09 +0530] [27765] [INFO] Using worker: gthread
+[2025-11-26 15:46:09 +0530] [27766] [INFO] Booting worker with pid: 27766
